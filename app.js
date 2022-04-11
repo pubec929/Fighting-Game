@@ -1,15 +1,32 @@
 // Main js
 class Sprite {
-    constructor({position, velocity}) {
+    constructor({position, velocity, color}) {
         this.position = position;
         this.velocity = velocity;
+        this.color = color;
         this.height = 150;
+        this.width = 50;
         this.lastKey;
+        this.attackBox = {position: this.position, width: 100, height: 50}
+        this.isAttacking;
     }
     
     draw() {
-        c.fillStyle = "red";
-        c.fillRect(this.position.x, this.position.y, 50, this.height);
+        c.fillStyle = this.color;
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+
+        // attack Box
+        if (this.isAttacking) {
+            c.fillStyle = "green";
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
+        }    
+    }
+
+    attack() {
+        this.isAttacking = true;
+        setTimeout(() => {
+            this.isAttacking = false;
+        }, 100);
     }
 
     update() {
@@ -49,6 +66,17 @@ function updateGame() {
         enemy.velocity.x = 2;
     }
 
+    // detect collision
+    const attackBoxCorner = player.attackBox.position.x + player.attackBox.width;
+    if (attackBoxCorner >= enemy.position.x && 
+        player.attackBox.position.x <= enemy.position.x + enemy.width &&
+        player.attackBox.position.y + player.attackBox.height >= enemy.position.y &&
+        player.attackBox.position.y <= enemy.position.y + enemy.height &&
+        player.isAttacking
+        ) {
+    console.log("hit");
+    player.isAttacking = false;
+    };
 }
 
 function setupWorld() {
@@ -57,8 +85,8 @@ function setupWorld() {
     canvas.height = 576;
     c.fillRect(0, 0, canvas.width, canvas.height);
 
-    player = new Sprite({position: {x: 0, y: 0}, velocity: {x: 0, y: 0}});
-    enemy = new Sprite({position: {x: 400, y: 100}, velocity: {x: 0, y: 0}});
+    player = new Sprite({position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, color: "red"});
+    enemy = new Sprite({position: {x: 400, y: 100}, velocity: {x: 0, y: 0}, color: "blue"});
 
     gravity = 0.2;
 
@@ -89,6 +117,9 @@ function handleKeyDown(e) {
             break
         case "w":
             player.velocity.y = -10;
+            break
+        case " ":
+            player.attack();
             break
         case "ArrowRight":
             keys.ArrowRight.pressed = true;
