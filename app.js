@@ -1,8 +1,10 @@
+import {time, timer} from "./timer.js";
+
 // Main js
 class Sprite {
-    constructor({position, velocity, color, keys, offset}) {
+    constructor({position, color, keys, offset}) {
         this.position = position;
-        this.velocity = velocity;
+        this.velocity = {x: 0, y: 0};
         this.color = color;
         this.height = 150;
         this.width = 50;
@@ -17,9 +19,11 @@ class Sprite {
             height: 50}
         this.isAttacking;
         this.keys = keys;
-        this.isDoubleJumped = false;
+        this.isDoubleJumped;
+        this.health = 100;
     }
     
+
     getKey(value) {
         return Object.keys(this.keys).find(property => this.keys[property].key === value);
     }
@@ -70,6 +74,7 @@ class Sprite {
         this.attackBox.position.y = this.position.y;
         this.draw();
 
+        if (!gameRunning) return;
         this.position.x += this.velocity.x;
         // Object not overlap on left
         if (this.position.x + this.velocity.x <= 0) this.position.x = 0;
@@ -99,14 +104,39 @@ function rectangularCollision({ rectangle1, rectangle2 }) {
     );
 }
 
+function determineWinner() {
+    messageElement.classList.remove("hide");
+    if (player.health === enemy.health) {
+        messageElement.innerText = "Tie";
+    } else if (player.health > enemy.health) {
+        messageElement.innerText = "Player 1 Wins";
+    } else if (player.health < enemy.health) {
+        messageElement.innerText = "Player 2 Wins";
+    }
+}
+
+function gameOver() {
+    determineWinner();
+    setTimeout(() => { //messageElement.innerText = "Press Any Enter to play again"
+        console.log("game ready");
+        gameReadyToStart = true;
+    }, 1000);
+    gameRunning = false;
+}
+
+
 function updateGame() {
     window.requestAnimationFrame(updateGame);
     c.fillStyle = "black";
     c.fillRect(0, 0, canvas.width, canvas.height);
-
+    
     player.update();
     enemy.update();
-
+    
+    if (!gameRunning) {
+        time.refresh();
+        return;
+    }
     // player movement
     player.move();
     // enemy movement
@@ -115,38 +145,66 @@ function updateGame() {
     // if player or enemy is attacking, check for collision
     if (player.isAttacking && rectangularCollision({rectangle1: player, rectangle2:enemy})) {
         player.isAttacking = false;
-        console.log("Hit");
+        enemy.health -= 20;
     }
     if (enemy.isAttacking && rectangularCollision({rectangle1: enemy, rectangle2: player})) {
         enemy.isAttacking = false;
-        console.log("hit by enemy")
+        player.health -= 20;
     }
+    // sync healthbar with health
+    enemyHealthBar.style.width = enemy.health + "%";
+    playerHealthBar.style.width = player.health + "%";
+
+    // end game based on health
+    if (player.health <= 0 || enemy.health <= 0) gameOver();
+
+    // Update time
+    countDown.update();
+    if (countDown.timePassed <= 0) gameOver();
 }
 
 function setupWorld() {
+    countDown.update();
+
     c = canvas.getContext("2d");
     canvas.width = 1024;
     canvas.height = 576;
     c.fillRect(0, 0, canvas.width, canvas.height);
 
     const playerKeys = {moveLeft: {key: "a", pressed: false}, moveRight: {key: "d", pressed: false}, jump: {key: "w", pressed: false}, attack: {key: " ", pressed: false}};
-    player = new Sprite({position: {x: 0, y: 0}, velocity: {x: 0, y: 0}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
-
+    player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
+    
     const enemyKeys = {moveLeft: {key: "ArrowLeft", pressed: false}, moveRight: {key: "ArrowRight", pressed: false}, jump: {key: "ArrowUp", pressed: false}, attack: {key: "ArrowDown", pressed: false}};
-    enemy = new Sprite({position: {x: 400, y: 100}, velocity: {x: 0, y: 0}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});
-
+    enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});
+    
     gravity = 0.2;
-
-    startGame();
+    updateGame();
 }
 
 function startGame() {
-    // later use
-    updateGame();
+
+    time.refresh();
+    messageElement.classList.add("hide");
+    gameRunning = true;
+    gameReadyToStart = false;
+
+    // needs to be refactored
+    const playerKeys = {moveLeft: {key: "a", pressed: false}, moveRight: {key: "d", pressed: false}, jump: {key: "w", pressed: false}, attack: {key: " ", pressed: false}};
+    player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
+    
+    const enemyKeys = {moveLeft: {key: "ArrowLeft", pressed: false}, moveRight: {key: "ArrowRight", pressed: false}, jump: {key: "ArrowUp", pressed: false}, attack: {key: "ArrowDown", pressed: false}};
+    enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});    
 }
 
 function handleKeyDown(e) {
     const pressedKey = e.key;
+
+    if (pressedKey === "Enter" && gameReadyToStart) {
+        startGame();
+        return
+    }
+
+    if (!gameRunning) return;
 
     if (!player.isKeyClicked(pressedKey) && !enemy.isKeyClicked(pressedKey)) return;
     const gameObject = player.isKeyClicked(pressedKey) ? player : enemy;
@@ -162,6 +220,7 @@ function handleKeyDown(e) {
 }
 
 function handleKeyUp(e) {
+    if (!gameRunning) return;
     const pressedKey = e.key;
     if (!player.isKeyClicked(pressedKey) && !enemy.isKeyClicked(pressedKey)) return;
     const gameObject = player.isKeyClicked(pressedKey) ? player : enemy;
@@ -173,13 +232,20 @@ function handleKeyUp(e) {
 
 // Get DOM Elements
 const canvas = document.querySelector("[data-game]");
+const enemyHealthBar = document.querySelector("[data-enemy-health]");
+const playerHealthBar = document.querySelector("[data-player-health]");
+const countDownElement = document.querySelector("[data-timer]");
+const messageElement = document.querySelector("[data-game-message]");
 
 // Global variables
 let c;
 let player;
 let enemy;
 let gravity;
-let keys;
+let gameRunning = false;
+let gameReadyToStart = true;
+
+const countDown = new timer(59, countDownElement);
 
 // Add Eventlistener
 document.addEventListener("keydown", handleKeyDown);

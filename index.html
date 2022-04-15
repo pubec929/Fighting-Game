@@ -4,11 +4,26 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="/app.js" defer></script>
+    <script src="/app.js" type="module" defer></script>
+    <script src="/timer.js" type="module" defer></script>
     <link rel="stylesheet" href="/styles.css">
     <title>Fighting-Game</title>
 </head>
 <body>
-    <canvas data-game></canvas>
+    <div class="world">
+        <div class="container">
+            <div class="life-bar-container">
+                <div class="life-bar"></div>
+                <div data-player-health class="life-bar-cover-player"></div>
+            </div>            
+            <div data-timer class="timer">60</div>
+            <div class="life-bar-container">
+                <div  class="life-bar"></div>
+                <div data-enemy-health class="life-bar-cover-enemy"></div>
+            </div>
+        </div>
+        <div data-game-message class="game-message">Press Enter to play</div>
+        <canvas data-game></canvas>
+    </div>
 </body>
 </html>

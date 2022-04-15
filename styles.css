@@ -1,0 +1,86 @@
+@font-face {
+    font-family: 'Digital Numbers';
+    font-style: normal;
+    font-weight: normal;
+    src: url("./assets/fonts/DigitalNumbers-Regular.woff") format('woff');
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    font-family: sans-serif;
+    font-weight: normal;
+    font-size: 1.5rem;
+}
+
+.world {
+    position: relative;
+    display: inline-flex;
+}
+
+.container {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.life-bar-container {
+    width: 100%;
+    height: 30px;
+    position: relative;
+}
+
+.life-bar {
+    background-color: yellow;
+    height: 30px;
+    width: 100%;
+}
+
+.timer {
+    font-family: Digital Numbers;
+    background-color: red;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.life-bar-cover-player {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: blue;
+}
+
+.life-bar-cover-enemy {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: blue;
+}
+
+.game-message {
+    position: absolute;
+    color: white;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.hide {
+    display: none;
+}
