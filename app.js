@@ -1,4 +1,5 @@
 import {time, timer} from "./timer.js";
+import MovementKeys from "./actions.js";
 
 // Main js
 class Sprite {
@@ -8,7 +9,7 @@ class Sprite {
         this.color = color;
         this.height = 150;
         this.width = 50;
-        this.lastKey;
+        this.lastKey = {primary: "", secondary: ""}
         this.attackBox = {
             position: {
                 x: this.position.x, 
@@ -67,21 +68,22 @@ class Sprite {
     }
     
     action() {
-        if (this.keys.jump.pressed && this.lastKey === this.keys.jump && !this.isDoubleJumped && !this.isJumping) {
+        this.velocity.x = 0;
+
+        if (this.keys.jump.pressed && this.lastKey.secondary === this.keys.jump && !this.isDoubleJumped && !this.isJumping) {
             this.jump();
             this.isJumping = true;
             return;
             //this.keys.jump.pressed = false;
-        } else if (this.keys.attack.pressed && this.lastKey === this.keys.attack && this.keys.attack.isAble) {
+        }
+        if (this.keys.attack.pressed && this.lastKey.secondary === this.keys.attack && this.keys.attack.isAble) {
             this.attack();
             return;
-        } else {
-            this.velocity.x = 0;
-
-            if (this.keys.moveLeft.pressed && this.lastKey === this.keys.moveLeft) this.velocity.x = -2;
-
-            else if (this.keys.moveRight.pressed && this.lastKey === this.keys.moveRight) this.velocity.x = 2;
         }
+       
+        if (this.keys.moveLeft.pressed && this.lastKey.primary === this.keys.moveLeft) this.velocity.x = -2;
+
+        if (this.keys.moveRight.pressed && this.lastKey.primary === this.keys.moveRight) this.velocity.x = 2;
 
     }
     update() {
@@ -186,10 +188,10 @@ function setupWorld() {
     canvas.height = 576;
     c.fillRect(0, 0, canvas.width, canvas.height);
 
-    const playerKeys = {moveLeft: {key: "a", pressed: false}, moveRight: {key: "d", pressed: false}, jump: {key: "w", pressed: false, isJumped: false}, attack: {key: " ", pressed: false, isAble: true, delay: 500}};
+    playerKeys = new MovementKeys({leftKey: "a", rightKey: "d", jumpKey: "w", attackKey: " "});
     player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
     
-    const enemyKeys = {moveLeft: {key: "ArrowLeft", pressed: false}, moveRight: {key: "ArrowRight", pressed: false}, jump: {key: "ArrowUp", pressed: false, isJumped: false}, attack: {key: "ArrowDown", pressed: false, isAble: true, delay: 500}};
+    enemyKeys = new MovementKeys({leftKey: "ArrowLeft", rightKey: "ArrowRight", jumpKey: "ArrowUp", attackKey: "ArrowDown"});
     enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});
     
     gravity = 0.2;
@@ -203,11 +205,8 @@ function startGame() {
     gameRunning = true;
     gameReadyToStart = false;
 
-    // needs to be refactored
-    const playerKeys = {moveLeft: {key: "a", pressed: false}, moveRight: {key: "d", pressed: false}, jump: {key: "w", pressed: false, isJumped: false}, attack: {key: " ", pressed: false, isAble: true, delay: 500, hasHit: false}};
     player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
     
-    const enemyKeys = {moveLeft: {key: "ArrowLeft", pressed: false}, moveRight: {key: "ArrowRight", pressed: false}, jump: {key: "ArrowUp", pressed: false, isJumped: false}, attack: {key: "ArrowDown", pressed: false, isAble: true, delay: 500, hasHit: false}};
     enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});    
 }
 
@@ -225,9 +224,10 @@ function handleKeyDown(e) {
     const gameObject = player.isKeyClicked(pressedKey) ? player : enemy;
     const action = gameObject.getKey(pressedKey);
 
-    
+    if (action === "jump" || action === "attack") gameObject.lastKey.secondary = gameObject.keys[action];
+    else gameObject.lastKey.primary = gameObject.keys[action];
+
     gameObject.keys[action].pressed = true;
-    gameObject.lastKey = gameObject.keys[action];
 }
 
 function handleKeyUp(e) {
@@ -255,6 +255,8 @@ let enemy;
 let gravity;
 let gameRunning = false;
 let gameReadyToStart = true;
+let playerKeys;
+let enemyKeys;
 
 const countDown = new timer(59, countDownElement);
 
