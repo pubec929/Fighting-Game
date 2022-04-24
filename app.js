@@ -1,30 +1,32 @@
-import {time, timer} from "./timer.js";
+import { time, timer } from "./timer.js";
 import MovementKeys from "./actions.js";
 
 // Main js
 class Sprite {
-    constructor({position, color, keys, offset}) {
+    constructor({ position, enemy, color, keys }) {
         this.position = position;
-        this.velocity = {x: 0, y: 0};
+        this.velocity = { x: 0, y: 0 };
+        this.enemy = enemy;
         this.color = color;
         this.height = 150;
         this.width = 50;
-        this.lastKey = {primary: "", secondary: ""}
+        this.lastKey = { primary: "", secondary: "" }
         this.attackBox = {
             position: {
-                x: this.position.x, 
+                x: this.position.x,
                 y: this.position.y
             },
-            offset,
-            width: 100, 
-            height: 50}
+            offset: { x: 0, y: 0 },
+            width: 100,
+            height: 50
+        }
         this.isAttacking;
         this.keys = keys;
         this.isDoubleJumped;
         this.health = 100;
         this.isJumping = false;
     }
-    
+
 
     getKey(value) {
         return Object.keys(this.keys).find(property => this.keys[property].key === value);
@@ -45,12 +47,21 @@ class Sprite {
         if (this.isAttacking) {
             c.fillStyle = "green";
             c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
-        }    
+        }
     }
 
     attack() {
         this.isAttacking = true;
         this.keys.attack.isAble = false;
+
+        if (this.position.x > this.enemy.position.x) {
+            // enemy is left, so draw attackbox on the left side of the object
+            this.attackBox.offset.x = this.width;
+        } else {
+            // enemy is right
+            this.attackBox.offset.x = 0;
+        }
+
         setTimeout(() => {
             this.keys.attack.isAble = true;
             this.keys.attack.hasHit = false;
@@ -60,13 +71,13 @@ class Sprite {
         }, 100);
     }
 
-    
+
     jump() {
         // If object still in the air, set doubleJumped to true
-        if (this.position.y + this.height < canvas.height ) this.isDoubleJumped = true;
+        if (this.position.y + this.height < canvas.height) this.isDoubleJumped = true;
         this.velocity.y = -8;
     }
-    
+
     action() {
         this.velocity.x = 0;
 
@@ -80,7 +91,7 @@ class Sprite {
             this.attack();
             return;
         }
-       
+
         if (this.keys.moveLeft.pressed && this.lastKey.primary === this.keys.moveLeft) this.velocity.x = -2;
 
         if (this.keys.moveRight.pressed && this.lastKey.primary === this.keys.moveRight) this.velocity.x = 2;
@@ -105,7 +116,7 @@ class Sprite {
             this.velocity.y = 0;
             this.isDoubleJumped = false;
             this.isJumping = false;
-        // Object not going over the top
+            // Object not going over the top
         } else if (this.position.y + this.velocity.y <= 0) {
             this.velocity.y = 0;
             this.position.y = 1;
@@ -115,7 +126,7 @@ class Sprite {
 
 function rectangularCollision({ rectangle1, rectangle2 }) {
     return (
-        rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x && 
+        rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x &&
         rectangle1.attackBox.position.x <= rectangle2.position.x + rectangle2.width &&
         rectangle1.attackBox.position.y + rectangle1.attackBox.height >= rectangle2.position.y &&
         rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
@@ -135,7 +146,7 @@ function determineWinner() {
 
 function gameOver() {
     determineWinner();
-    setTimeout(() => { 
+    setTimeout(() => {
         gameReadyToStart = true;
     }, 1000);
     gameRunning = false;
@@ -146,10 +157,10 @@ function updateGame() {
     window.requestAnimationFrame(updateGame);
     c.fillStyle = "black";
     c.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     player.update();
     enemy.update();
-    
+
     if (!gameRunning) {
         time.refresh();
         return;
@@ -158,13 +169,13 @@ function updateGame() {
     player.action();
     // enemy movement
     enemy.action();
-   
+
     // if player or enemy is attacking, check for collision
-    if (player.isAttacking && rectangularCollision({rectangle1: player, rectangle2:enemy}) &&!player.keys.attack.hasHit) {
+    if (player.isAttacking && rectangularCollision({ rectangle1: player, rectangle2: enemy }) && !player.keys.attack.hasHit) {
         enemy.health -= 20;
         player.keys.attack.hasHit = true;
     }
-    if (enemy.isAttacking && rectangularCollision({rectangle1: enemy, rectangle2: player}) &&!enemy.keys.attack.hasHit) {
+    if (enemy.isAttacking && rectangularCollision({ rectangle1: enemy, rectangle2: player }) && !enemy.keys.attack.hasHit) {
         player.health -= 20;
         enemy.keys.attack.hasHit = true;
     }
@@ -188,12 +199,12 @@ function setupWorld() {
     canvas.height = 576;
     c.fillRect(0, 0, canvas.width, canvas.height);
 
-    playerKeys = new MovementKeys({leftKey: "a", rightKey: "d", jumpKey: "w", attackKey: " "});
-    player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
-    
-    enemyKeys = new MovementKeys({leftKey: "ArrowLeft", rightKey: "ArrowRight", jumpKey: "ArrowUp", attackKey: "ArrowDown"});
-    enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});
-    
+    playerKeys = new MovementKeys({ leftKey: "a", rightKey: "d", jumpKey: "w", attackKey: " " });
+    player = new Sprite({ position: { x: 200, y: canvas.height - 150 }, enemy: null, color: "red", keys: playerKeys });
+
+    enemyKeys = new MovementKeys({ leftKey: "ArrowLeft", rightKey: "ArrowRight", jumpKey: "ArrowUp", attackKey: "ArrowDown" });
+    enemy = new Sprite({ position: { x: canvas.width - 200, y: canvas.height - 150 }, enemy: null, color: "blue", keys: enemyKeys });
+
     gravity = 0.2;
     updateGame();
 }
@@ -205,14 +216,17 @@ function startGame() {
     gameRunning = true;
     gameReadyToStart = false;
 
-    player = new Sprite({position: {x: 200, y: canvas.height - 150}, color: "red", keys: playerKeys, offset: {x: 0, y: 0}});
-    
-    enemy = new Sprite({position: {x: canvas.width - 200, y: canvas.height - 150}, color: "blue", keys: enemyKeys, offset: {x: 50, y: 0}});    
+    // fix this, objects shouldn't be recreated
+    player = new Sprite({ position: { x: 200, y: canvas.height - 150 }, enemy: enemy, color: "red", keys: playerKeys });
+    enemy = new Sprite({ position: { x: canvas.width - 200, y: canvas.height - 150 }, enemy: player, color: "blue", keys: enemyKeys });
+
+
+    player.enemy = enemy;
 }
 
 function handleKeyDown(e) {
     const pressedKey = e.key;
-    
+
     if (pressedKey === "Enter" && gameReadyToStart) {
         startGame();
         return
