@@ -9,8 +9,8 @@ class getTime {
     get sinceStart() {
         // returns time since the game has started
         return Math.floor((this.sinceLoad - this.timeOffSett) / 1000);
-    }   
-    
+    }
+
     get sinceLoad() {
         // returns time passed since page load
         return window.performance.now();
@@ -22,7 +22,7 @@ class getTime {
     }
 }
 
-export class timer {
+class timer {
     constructor(periodOfTime, element) {
         this.periodOfTime = periodOfTime;
         this.element = element;
@@ -57,5 +57,4 @@ export class timer {
 }
 
 
-
-export const time = new getTime(); 
+const time = new getTime(); 
