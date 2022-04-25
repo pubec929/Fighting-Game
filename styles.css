@@ -81,6 +81,13 @@
     font-size: 1rem;
 }
 
+.player-tag {
+    font-size: 1rem;
+    color: black;
+    position: absolute;
+    white-space: nowrap;
+}
+
 .hide {
     display: none;
 }

@@ -1,24 +1,47 @@
 // All objects classes for the game
 
 class Sprite {
-    constructor({ position, imageSrc }) {
+    constructor({ position, imageSrc, width, height, framesMax = 1, scale = 1 }) {
         this.position = position;
         this.image = new Image();
         this.image.src = imageSrc;
+        this.scale = scale;
+        this.framesMax = framesMax;
+        this.currentFrame = 0;
+        this.framesElapsed = 0;
+        this.framesHold = 10;
+    }
+
+    get PixelPerFrame() {
+        return this.image.width / this.framesMax;
     }
 
     draw() {
-        c.drawImage(this.image, this.position.x, this.position.y);
+        c.drawImage(
+            this.image,
+            this.PixelPerFrame * this.currentFrame,
+            0,
+            this.PixelPerFrame,
+            this.image.height,
+            this.position.x,
+            this.position.y,
+            this.PixelPerFrame * this.scale,
+            this.image.height * this.scale
+        );
     }
 
     update() {
         this.draw();
+        this.framesElapsed++;
+        if (this.framesElapsed % this.framesHold != 1) return;
+        this.currentFrame = (this.currentFrame + 1) % this.framesMax;
     }
 }
 
 
 class Fighter {
-    constructor({ position, color, keys, offset }) {
+    constructor({ name, position, color, keys, offset }) {
+        this.name = name;
         this.position = position;
         this.velocity = { x: 0, y: 0 };
         this.enemy = enemy;
@@ -40,8 +63,24 @@ class Fighter {
         this.isDoubleJumped;
         this.health = 100;
         this.isJumping = false;
+        this.nameTag;
+        this.setUpNameTag();
     }
 
+    setUpNameTag() {
+        // if a name tag is already existing return
+        this.nameTag = document.querySelector(`[data-name='${this.name}']`);
+        if (this.nameTag) return;
+
+        // create name tag for player
+        this.nameTag = document.createElement("div");
+
+        world.appendChild(this.nameTag);
+        this.nameTag.classList.add("player-tag");
+
+        this.nameTag.innerText = this.name;
+        this.nameTag.setAttribute("data-name", this.name);
+    }
 
     getKey(value) {
         return Object.keys(this.keys).find(property => this.keys[property].key === value);
@@ -104,9 +143,17 @@ class Fighter {
         if (this.keys.moveRight.pressed && this.lastKey.primary === this.keys.moveRight) this.velocity.x = 2;
 
     }
+
     update() {
+        // move attackbox to current position
         this.attackBox.position.x = this.position.x - this.attackBox.offset.x;
         this.attackBox.position.y = this.position.y;
+        // move nameTag to current position, with a margin/offset of 5
+        this.nameTag.style.top = `${this.position.y - this.nameTag.clientHeight - 5}px`;
+        // center the tap upon the player
+        this.nameTag.style.left = `${this.position.x + this.width / 2 - this.nameTag.clientWidth / 2}px`;
+
+
         this.draw();
 
         if (!gameRunning) return;

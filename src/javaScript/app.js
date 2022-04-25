@@ -15,9 +15,9 @@ function determineWinner() {
     if (player.health === enemy.health) {
         messageElement.innerText = "Tie";
     } else if (player.health > enemy.health) {
-        messageElement.innerText = "Player 1 Wins";
+        messageElement.innerText = `${player.name} Wins`;
     } else if (player.health < enemy.health) {
-        messageElement.innerText = "Player 2 Wins";
+        messageElement.innerText = `${enemy.name} Wins`;
     }
 }
 
@@ -33,6 +33,7 @@ function gameOver() {
 function updateGame() {
     window.requestAnimationFrame(updateGame);
     background.update();
+    shop.update();
 
     player.update();
     enemy.update();
@@ -73,14 +74,19 @@ function setupWorld() {
     c = canvas.getContext("2d");
     canvas.width = 1024;
     canvas.height = 576;
+    // set background
     background = new Sprite({ position: { x: 0, y: 0 }, imageSrc: "assets/img/background.png" });
     background.bottom = canvas.height - 95; // the y position from the background image bottom
 
-    playerKeys = new MovementKeys({ leftKey: "a", rightKey: "d", jumpKey: "w", attackKey: " " });
-    player = new Fighter({ position: { x: 200, y: background.bottom - 150 }, color: "red", keys: playerKeys, offset: { x: 0, y: 0 } });
+    // set shop image in the background
+    shop = new Sprite({ position: { x: 600, y: background.bottom - 320 }, imageSrc: "assets/img/shop.png", framesMax: 6, scale: 2.5 })
 
-    enemyKeys = new MovementKeys({ leftKey: "ArrowLeft", rightKey: "ArrowRight", jumpKey: "ArrowUp", attackKey: "ArrowDown" });
-    enemy = new Fighter({ position: { x: canvas.width - 200, y: background.bottom - 150 }, color: "blue", keys: enemyKeys, offset: { x: 50, y: 0 } });
+    playerKeys = new MovementKeys({ leftKey: "a", rightKey: "d", jumpKey: "w", attackKey: " " });
+    player = new Fighter({ name: "Player 1", position: { x: 200, y: background.bottom - 150 }, color: "red", keys: playerKeys, offset: { x: 0, y: 0 } });
+
+    //enemyKeys = new MovementKeys({ leftKey: "ArrowLeft", rightKey: "ArrowRight", jumpKey: "ArrowUp", attackKey: "ArrowDown" });
+    enemyKeys = new MovementKeys({ leftKey: "j", rightKey: "l", jumpKey: "i", attackKey: "k" });
+    enemy = new Fighter({ name: "Player 2", position: { x: canvas.width - 200, y: background.bottom - 150 }, color: "blue", keys: enemyKeys, offset: { x: 50, y: 0 } });
 
     gravity = 0.2;
     updateGame();
@@ -94,8 +100,8 @@ function startGame() {
     gameReadyToStart = false;
 
     // fix this, objects shouldn't be recreated
-    player = new Fighter({ position: { x: 200, y: background.bottom - 150 }, color: "red", keys: playerKeys, offset: { x: 0, y: 0 } });
-    enemy = new Fighter({ position: { x: canvas.width - 200, y: background.bottom - 150 }, color: "blue", keys: enemyKeys, offset: { x: 50, y: 0 } });
+    player = new Fighter({ name: "Player 1", position: { x: 200, y: background.bottom - 150 }, color: "red", keys: playerKeys, offset: { x: 0, y: 0 } });
+    enemy = new Fighter({ name: "Player 2", position: { x: canvas.width - 200, y: background.bottom - 150 }, color: "blue", keys: enemyKeys, offset: { x: 50, y: 0 } });
 
 
     player.enemy = enemy;
@@ -138,12 +144,15 @@ const enemyHealthBar = document.querySelector("[data-enemy-health]");
 const playerHealthBar = document.querySelector("[data-player-health]");
 const countDownElement = document.querySelector("[data-timer]");
 const messageElement = document.querySelector("[data-game-message]");
+const world = document.querySelector("[data-world]");
 
 // Global variables
 let c;
 let player;
 let enemy;
 let background;
+let shop;
+
 let gravity;
 let gameRunning = false;
 let gameReadyToStart = true;
