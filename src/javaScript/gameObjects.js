@@ -1,7 +1,7 @@
 // All objects classes for the game
 
 class Sprite {
-    constructor({ position, imageSrc, width, height, framesMax = 1, scale = 1 }) {
+    constructor({ position, imageSrc, framesMax = 1, scale = 1, offset = { x: 0, y: 0 }, framesHoldPerImage = 80 }) {
         this.position = position;
         this.image = new Image();
         this.image.src = imageSrc;
@@ -9,62 +9,66 @@ class Sprite {
         this.framesMax = framesMax;
         this.currentFrame = 0;
         this.framesElapsed = 0;
-        this.framesHold = 10;
+        this.framesHoldPerImage = framesHoldPerImage;
+        this.offset = offset;
     }
 
     get PixelPerFrame() {
         return this.image.width / this.framesMax;
     }
 
+    get framesHold() {
+        return Math.floor(this.framesHoldPerImage / this.framesMax);
+    }
+
     draw() {
         c.drawImage(
             this.image,
-            this.PixelPerFrame * this.currentFrame,
-            0,
-            this.PixelPerFrame,
-            this.image.height,
-            this.position.x,
-            this.position.y,
-            this.PixelPerFrame * this.scale,
+            this.PixelPerFrame * (this.currentFrame % this.framesMax), // start clipping x position
+            0, // start clipping y position
+            this.PixelPerFrame, // clipped image width
+            this.image.height, // clipped image height
+            this.position.x - this.offset.x, // positioning on canvas
+            this.position.y - this.offset.y, // positioning on canvas
+            this.PixelPerFrame * this.scale, // scaling the clipped image
             this.image.height * this.scale
         );
     }
 
-    update() {
-        this.draw();
+    animatFrame() {
         this.framesElapsed++;
         if (this.framesElapsed % this.framesHold != 1) return;
         this.currentFrame = (this.currentFrame + 1) % this.framesMax;
     }
+
+    update() {
+        this.draw();
+        this.animatFrame();
+    }
 }
 
 
-class Fighter {
-    constructor({ name, position, color, keys, offset }) {
+class Fighter extends Sprite {
+    constructor({ name, position, keys, offset, scale = 1, framesHold }) {
+        const tempImageSrc = keys.idle.src;
+        const tempFramesMax = keys.idle.framesMax;
+        super({ position, imageSrc: tempImageSrc, scale, framesMax: tempFramesMax, offset, framesHold });
+
         this.name = name;
-        this.position = position;
         this.velocity = { x: 0, y: 0 };
-        this.enemy = enemy;
-        this.color = color;
         this.height = 150;
         this.width = 50;
         this.lastKey = { primary: "", secondary: "" }
-        this.attackBox = {
-            position: {
-                x: this.position.x,
-                y: this.position.y
-            },
-            offset,
-            width: 100,
-            height: 50
-        }
         this.isAttacking;
         this.keys = keys;
         this.isDoubleJumped;
         this.health = 100;
         this.isJumping = false;
         this.nameTag;
+        this.isInAir = false;
+        this.animatedAttack = false;
         this.setUpNameTag();
+
     }
 
     setUpNameTag() {
@@ -93,17 +97,6 @@ class Fighter {
         return false;
     }
 
-    draw() {
-        c.fillStyle = this.color;
-        c.fillRect(this.position.x, this.position.y, this.width, this.height);
-
-        // attack Box
-        if (this.isAttacking) {
-            c.fillStyle = "green";
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
-        }
-    }
-
     attack() {
         this.isAttacking = true;
         this.keys.attack.isAble = false;
@@ -111,6 +104,7 @@ class Fighter {
         setTimeout(() => {
             this.keys.attack.isAble = true;
             this.keys.attack.hasHit = false;
+            this.animatedAttack = false;
         }, this.keys.attack.delay)
         setTimeout(() => {
             this.isAttacking = false;
@@ -127,34 +121,57 @@ class Fighter {
     action() {
         this.velocity.x = 0;
 
+        let actionTaken;
+
         if (this.keys.jump.pressed && this.lastKey.secondary === this.keys.jump && !this.isDoubleJumped && !this.isJumping) {
             this.jump();
             this.isJumping = true;
             return;
-            //this.keys.jump.pressed = false;
         }
         if (this.keys.attack.pressed && this.lastKey.secondary === this.keys.attack && this.keys.attack.isAble) {
+            this.switchFrame("attack");
+            this.animatedAttack = true;
             this.attack();
             return;
         }
 
-        if (this.keys.moveLeft.pressed && this.lastKey.primary === this.keys.moveLeft) this.velocity.x = -2;
+        if (this.keys.moveLeft.pressed && this.lastKey.primary === this.keys.moveLeft) {
+            this.velocity.x = -2;
+            this.switchFrame("moveLeft");
+            actionTaken = true;
+        }
+        if (this.keys.moveRight.pressed && this.lastKey.primary === this.keys.moveRight) {
+            this.velocity.x = 2;
+            this.switchFrame("moveRight");
+            actionTaken = true;
+        }
 
-        if (this.keys.moveRight.pressed && this.lastKey.primary === this.keys.moveRight) this.velocity.x = 2;
+        if (actionTaken) return;
+        this.switchFrame("idle");
+    }
 
+    switchFrame(sprite) {
+        const pattern = new RegExp(this.keys[sprite]?.src);
+        if ((this.isInAir && sprite != "jump" && sprite != "fall" && sprite != "attack") || this.image.src.match(pattern) || this.animatedAttack) return;
+        this.image.src = this.keys[sprite].src;
+        this.framesMax = this.keys[sprite].framesMax;
+        this.currentFrame = 0;
     }
 
     update() {
         // move attackbox to current position
+        /*
         this.attackBox.position.x = this.position.x - this.attackBox.offset.x;
         this.attackBox.position.y = this.position.y;
-        // move nameTag to current position, with a margin/offset of 5
-        this.nameTag.style.top = `${this.position.y - this.nameTag.clientHeight - 5}px`;
+        */
+        // move nameTag to current position
+        this.nameTag.style.top = `${this.position.y - this.nameTag.clientHeight}px`;
         // center the tap upon the player
         this.nameTag.style.left = `${this.position.x + this.width / 2 - this.nameTag.clientWidth / 2}px`;
 
 
         this.draw();
+        this.animatFrame();
 
         if (!gameRunning) return;
         this.position.x += this.velocity.x;
@@ -165,15 +182,26 @@ class Fighter {
 
         this.position.y += this.velocity.y;
 
+        if (this.velocity.y > 0) {
+            this.switchFrame("fall");
+        } else if (this.velocity.y < 0) {
+            this.switchFrame("jump");
+        }
+
         // Object staying on the ground
         if (this.position.y + this.height + this.velocity.y >= background.bottom) {
             this.velocity.y = 0;
+            this.position.y = background.bottom - this.height;
             this.isDoubleJumped = false;
             this.isJumping = false;
+            this.isInAir = false;
             // Object not going over the top
         } else if (this.position.y + this.velocity.y <= 0) {
             this.velocity.y = 0;
             this.position.y = 1;
-        } else this.velocity.y += gravity;
+        } else {
+            this.velocity.y += gravity;
+            this.isInAir = true;
+        }
     }
 }
