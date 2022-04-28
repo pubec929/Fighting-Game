@@ -49,19 +49,28 @@ class Sprite {
 
 
 class Fighter extends Sprite {
-    constructor({ name, position, keys, offset, scale = 1, framesHold }) {
+    constructor({ name, position, keys, offset, attackBox, scale = 1, framesHold, width = 50, height = 150 }) {
         const tempImageSrc = keys.idle.src;
         const tempFramesMax = keys.idle.framesMax;
         super({ position, imageSrc: tempImageSrc, scale, framesMax: tempFramesMax, offset, framesHold });
 
         this.name = name;
         this.velocity = { x: 0, y: 0 };
-        this.height = 150;
-        this.width = 50;
+        this.height = height;
+        this.width = width;
         this.lastKey = { primary: "", secondary: "" }
         this.isAttacking;
         this.keys = keys;
         this.isDoubleJumped;
+        this.attackBox = {
+            position: {
+                x: this.position.x,
+                y: this.position.y
+            },
+            offset: attackBox.offset,
+            width: attackBox.width,
+            height: attackBox.height,
+        }
         this.health = 100;
         this.isJumping = false;
         this.nameTag;
@@ -106,9 +115,6 @@ class Fighter extends Sprite {
             this.keys.attack.hasHit = false;
             this.animatedAttack = false;
         }, this.keys.attack.delay)
-        setTimeout(() => {
-            this.isAttacking = false;
-        }, 100);
     }
 
 
@@ -116,6 +122,7 @@ class Fighter extends Sprite {
         // If object still in the air, set doubleJumped to true
         if (this.position.y + this.height < background.bottom) this.isDoubleJumped = true;
         this.velocity.y = -8;
+        this.isJumping = true;
     }
 
     action() {
@@ -125,7 +132,6 @@ class Fighter extends Sprite {
 
         if (this.keys.jump.pressed && this.lastKey.secondary === this.keys.jump && !this.isDoubleJumped && !this.isJumping) {
             this.jump();
-            this.isJumping = true;
             return;
         }
         if (this.keys.attack.pressed && this.lastKey.secondary === this.keys.attack && this.keys.attack.isAble) {
@@ -160,20 +166,25 @@ class Fighter extends Sprite {
 
     update() {
         // move attackbox to current position
-        /*
+
         this.attackBox.position.x = this.position.x - this.attackBox.offset.x;
-        this.attackBox.position.y = this.position.y;
-        */
+        this.attackBox.position.y = this.position.y - this.attackBox.offset.y;
+
+        if (this.name == "Kenji") {
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        }
         // move nameTag to current position
         this.nameTag.style.top = `${this.position.y - this.nameTag.clientHeight}px`;
         // center the tap upon the player
         this.nameTag.style.left = `${this.position.x + this.width / 2 - this.nameTag.clientWidth / 2}px`;
 
+        // debugging purpose
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+
 
         this.draw();
         this.animatFrame();
 
-        if (!gameRunning) return;
         this.position.x += this.velocity.x;
         // Object not overlap on left
         if (this.position.x + this.velocity.x <= 0) this.position.x = 0;

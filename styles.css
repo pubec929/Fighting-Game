@@ -59,7 +59,7 @@ body {
     font-size: 1rem;
 }
 
-.life-bar-cover-player {
+.life-bar-cover-left {
     position: absolute;
     top: 0;
     right: 0;
@@ -68,7 +68,7 @@ body {
     background-color: blue;
 }
 
-.life-bar-cover-enemy {
+.life-bar-cover-right {
     position: absolute;
     top: 0;
     right: 0;
